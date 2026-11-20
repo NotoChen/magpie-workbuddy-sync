@@ -153,6 +153,7 @@ Magpie 的检索逻辑在 `internal/plugin/github.go`：用 GitHub Search 查 `t
 
 - 当前主机每次发布/续租都会带着自己的租约；
 - 页面“接管主机”会把本机设为 master，并设置 `allowMasterChange: true`；
+- 接管成功后这个开关会自动清除，避免后续误接管；
 - 接管时 epoch 加一，旧主机下一次发布会读到新的 owner，停止发布并在页面提示；
 - 快照写入使用 GitHub Contents API 的 SHA 条件写：两台主机同时写时只有一台成功，另一台重新读取后看到新租约，停止。
 
