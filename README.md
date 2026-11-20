@@ -112,7 +112,7 @@ Magpie 的检索逻辑在 `internal/plugin/github.go`：用 GitHub Search 查 `t
 
 ## 页面
 
-插件在 Magpie 侧栏提供「WorkBuddy Sync」页面：
+插件在 Magpie 侧栏提供「WorkBuddy Sync」页面（字体、颜色、按钮都跟随 Magpie 的 `--magpie-*` 主题 token）：
 
 - 每 20 秒自动刷新状态，不需要手动点“重新读取”；
 - 页面里的“角色”可以直接切换 `自动 / 主机 / 从机`，应用后写入本机 `workbuddy-sync.json`，不会改变其他机器；
