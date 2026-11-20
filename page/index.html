@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WorkBuddy Sync</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="_magpie/bridge.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>WorkBuddy Sync</h1>
+      <p class="muted">通过 Magpie 自己的 GitHub 同步仓库，把 WorkBuddy / WorkBuddy AI 账号从主机带到从机。</p>
+    </div>
+    <button type="button" id="reload">重新读取</button>
+  </header>
+
+  <main id="content">
+    <p class="muted">正在读取……</p>
+  </main>
+
+  <section class="help">
+    <h2>角色</h2>
+    <p>默认跟随 Magpie 的同步设置：<code>sync.json</code> 里 <code>followServer: true</code> 的机器是 <b>从机</b>，其余是 <b>主机</b>。</p>
+    <p>要固定角色，在 Magpie 配置目录（通常是 <code>~/.config/magpie</code>）新建 <code>workbuddy-sync.json</code>：</p>
+    <pre>{
+  "role": "master"
+}</pre>
+    <p>从机写成 <code>"role": "slave"</code>。这个文件是本机自己的，不会进入 Magpie 的同步。</p>
+  </section>
+</body>
+</html>

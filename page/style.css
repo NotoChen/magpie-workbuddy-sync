@@ -1,0 +1,49 @@
+:root {
+  color-scheme: light dark;
+  --line: color-mix(in srgb, var(--magpie-fg, #222) 14%, transparent);
+  --muted: color-mix(in srgb, var(--magpie-fg, #222) 62%, transparent);
+  --card: color-mix(in srgb, var(--magpie-fg, #222) 4%, transparent);
+  --ok: #1a7f37;
+  --bad: #c62828;
+  --warn: #9a6700;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 20px 24px 28px;
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  color: var(--magpie-fg, #222);
+  background: var(--magpie-bg, transparent);
+}
+header { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+h1 { margin: 0 0 4px; font-size: 20px; letter-spacing: -.01em; }
+h2 { margin: 0 0 6px; font-size: 14px; }
+p { margin: 6px 0; }
+.muted, small { color: var(--muted); }
+button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+button:hover { background: var(--card); }
+#content { display: grid; gap: 12px; }
+.card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: var(--card); }
+.card.ok { border-color: color-mix(in srgb, var(--ok) 38%, var(--line)); }
+.card.bad { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+.status { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+.card.bad .dot { background: var(--bad); }
+.bad { color: var(--bad); }
+.warn { color: var(--warn); }
+.row { display: grid; grid-template-columns: 120px 1fr; gap: 4px 12px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.row:last-child { border-bottom: 0; }
+.name { color: var(--muted); }
+.value { overflow-wrap: anywhere; }
+.row small { grid-column: 2; }
+.help { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+.help pre { padding: 10px 12px; border-radius: 8px; background: var(--card); overflow: auto; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }

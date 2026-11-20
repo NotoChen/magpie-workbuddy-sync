@@ -1,0 +1,4 @@
+node_modules/
+page/data.js.tmp-*
+*.log
+.DS_Store

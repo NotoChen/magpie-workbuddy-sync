@@ -1,0 +1,63 @@
+{
+  "name": "magpie-workbuddy-sync",
+  "version": "0.1.0",
+  "description": "Sync WorkBuddy and WorkBuddy AI accounts between Magpie computers through Magpie's own GitHub sync repository: the master publishes access tokens, followers apply them read-only and never refresh.",
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "lib",
+    "page",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "magpie",
+    "magpie-plugin",
+    "magpie-page",
+    "workbuddy",
+    "workbuddy-ai",
+    "sync",
+    "account-sync",
+    "opencode"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NotoChen/magpie-workbuddy-sync.git"
+  },
+  "homepage": "https://github.com/NotoChen/magpie-workbuddy-sync",
+  "bugs": {
+    "url": "https://github.com/NotoChen/magpie-workbuddy-sync/issues"
+  },
+  "magpie": {
+    "name": "WorkBuddy Sync",
+    "summary": {
+      "zh": "通过 Magpie 自己的 GitHub 同步仓库，把 WorkBuddy / WorkBuddy AI 账号从主机同步到从机；从机只保存 access token，永不刷新。",
+      "zh-TW": "透過 Magpie 自己的 GitHub 同步倉庫，把 WorkBuddy / WorkBuddy AI 帳號從主機同步到從機；從機只保存 access token，永不刷新。",
+      "en": "Sync WorkBuddy and WorkBuddy AI accounts between Magpie computers through Magpie's GitHub sync repository; followers keep access tokens only and never refresh."
+    },
+    "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxYTFhMWEiLz48cGF0aCBkPSJNMTggMjBoMTJ2MjRIMTh6TTM0IDIwaDEydjI0SDM0eiIgZmlsbD0iI2ZmYiIgb3BhY2l0eT0iLjE1Ii8+PHBhdGggZD0iTTIyIDI0aDhsMTIgMTZoLTh6IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTQyIDI0aC02bC0xMCAxNGg2eiIgZmlsbD0iIzdjY2ZmZiIvPjwvc3ZnPg==",
+    "page": {
+      "title": "WorkBuddy Sync",
+      "titles": {
+        "zh": "WorkBuddy 账号同步",
+        "zh-TW": "WorkBuddy 帳號同步",
+        "ja": "WorkBuddy アカウント同期",
+        "de": "WorkBuddy-Kontosynchronisierung"
+      },
+      "file": "page/index.html",
+      "keepAlive": true,
+      "icon": "page/icon.svg"
+    }
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
