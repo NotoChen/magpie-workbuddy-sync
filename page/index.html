@@ -10,25 +10,24 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>WorkBuddy Sync</h1>
-      <p class="muted">通过 Magpie 自己的 GitHub 同步仓库，把 WorkBuddy / WorkBuddy AI 账号从主机带到从机。</p>
+  <header class="top">
+    <div class="brand">
+      <img class="brand-mark" src="icon.svg" alt="">
+      <div class="brand-copy">
+        <h1>WorkBuddy Sync</h1>
+        <p class="muted">主机负责刷新，从机只读使用同一组 WorkBuddy / WorkBuddy AI 账号。</p>
+      </div>
     </div>
-    <button type="button" id="reload">重新读取</button>
+    <div class="top-actions">
+      <button type="button" id="sync-now" class="primary">立即同步</button>
+      <button type="button" id="reload" class="quiet">刷新状态</button>
+    </div>
   </header>
 
   <main id="content">
-    <p class="muted">正在读取……</p>
+    <p class="muted">正在读取状态……</p>
   </main>
 
-  <section class="help">
-    <h2>角色</h2>
-    <p>默认跟随 Magpie 的同步设置：<code>sync.json</code> 里 <code>followServer: true</code> 的机器是 <b>从机</b>，其余是 <b>主机</b>。上方的下拉框可以直接切换；也可以手动编辑本机的 <code>workbuddy-sync.json</code>。</p>
-    <pre>{
-  "role": "master"
-}</pre>
-    <p>从机写成 <code>"role": "slave"</code>。这个文件是本机自己的，不会进入 Magpie 的同步。</p>
-  </section>
+  <footer class="foot muted">WorkBuddy Sync · 通过 Magpie 的 GitHub 同步传递账号，不额外配置 token 或口令</footer>
 </body>
 </html>

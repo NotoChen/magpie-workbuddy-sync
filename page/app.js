@@ -1,17 +1,48 @@
 const content = document.getElementById("content");
 const reload = document.getElementById("reload");
+const syncNow = document.getElementById("sync-now");
 let busy = false;
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function row(name, value, note = "") {
-  return `<div class="row"><span class="name">${esc(name)}</span><span class="value">${esc(value || "—")}</span>${note ? `<small>${esc(note)}</small>` : ""}</div>`;
+function when(value) {
+  if (!value) return "尚未";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-function selected(actual, value) {
-  return actual === value ? " selected" : "";
+function roleName(role) {
+  return role === "master" ? "主机" : role === "slave" ? "从机" : role || "未知";
+}
+
+function roleDescription(s) {
+  if (s.role === "master") return "本机负责刷新 WorkBuddy 凭据，并把账号发布到 GitHub。";
+  if (s.role === "slave") return "本机只接收主机发布的 access token，不参与鉴权刷新。";
+  return "尚未确定角色。";
+}
+
+function statusTone(s) {
+  if (s.ok === false) return "bad";
+  if (s.warning || s.securityWarning) return "warn";
+  return "ok";
+}
+
+function statusTitle(s) {
+  if (s.ok === false) return "需要处理";
+  if (String(s.message || "").startsWith("published")) return "已发布到 GitHub";
+  if (String(s.message || "").startsWith("applied")) return "已应用主机的账号";
+  return "同步正常";
+}
+
+function row(name, value) {
+  return `<div class="info-row"><span>${esc(name)}</span><b>${esc(value || "—")}</b></div>`;
+}
+
+function stat(name, value) {
+  return `<div class="stat"><strong>${esc(value)}</strong><span>${esc(name)}</span></div>`;
 }
 
 async function applyOption(command, message) {
@@ -19,7 +50,7 @@ async function applyOption(command, message) {
   const s = globalThis.WORKBUDDY_SYNC;
   const status = document.getElementById("apply-status");
   if (!s?.machineId) {
-    if (status) status.textContent = "状态里没有 machineId，先让插件完成一次加载。";
+    if (status) status.textContent = "状态还没有就绪，请稍后重试。";
     return;
   }
   busy = true;
@@ -31,7 +62,7 @@ async function applyOption(command, message) {
       workbuddySyncCommand: { ...command, machine: s.machineId, at: Date.now() },
     });
     if (status) status.textContent = message;
-    setTimeout(() => location.reload(), 1800);
+    setTimeout(() => location.reload(), 1600);
   } catch (e) {
     if (status) status.textContent = `提交失败：${e?.message || e}`;
   } finally {
@@ -39,72 +70,84 @@ async function applyOption(command, message) {
   }
 }
 
-async function applyRole() {
+function applyRole() {
   const select = document.getElementById("role");
   if (!select) return;
-  await applyOption({ action: "set-role", role: select.value }, "已提交，Magpie 会重载插件；页面稍后自动刷新。");
+  return applyOption({ action: "set-role", role: select.value }, "已提交，Magpie 会重载插件。");
 }
+
 function render() {
   const s = globalThis.WORKBUDDY_SYNC;
   if (!s) {
-    content.innerHTML = `<p class="bad">插件还没有写出状态。确认 Magpie 已加载本插件，并且 <code>sync.json</code> 存在。</p>`;
+    content.innerHTML = `<section class="banner bad"><span class="dot"></span><div><strong>还没有状态</strong><p>确认 Magpie 已加载插件，并且 <code>sync.json</code> 存在。</p></div></section>`;
     return;
   }
-  const ok = s.ok !== false;
-  const roleLabel = s.role === "master" ? "主机（master）" : s.role === "slave" ? "从机（slave）" : s.role || "未知";
-  const roleHint = s.roleSource === "sync.json.followServer"
-    ? "自动：sync.json 的 followServer 决定"
-    : "已由 workbuddy-sync.json 固定";
+  const tone = statusTone(s);
+  const role = roleName(s.role);
+  const auto = s.roleSource === "sync.json.followServer";
+  const notice = s.error || s.warning || s.securityWarning || "";
+  const roleHint = auto ? "跟随 Magpie 的同步设置自动判断" : "已由本机 workbuddy-sync.json 固定";
   content.innerHTML = `
-    <section class="card ${ok ? "ok" : "bad"}">
-      <div class="status"><span class="dot"></span><strong>${esc(s.message || (ok ? "正常" : "异常"))}</strong></div>
-      ${s.error ? `<p class="bad">${esc(s.error)}</p>` : ""}
-      ${s.warning ? `<p class="warn">${esc(s.warning)}</p>` : ""}
-      ${s.securityWarning ? `<p class="warn">${esc(s.securityWarning)}</p>` : ""}
-      <small>状态时间：${esc(s.generatedAt || "")} · 页面每 20 秒自动刷新</small>
-    </section>
-
-    <section class="card">
-      <h2>角色</h2>
-      ${row("当前角色", roleLabel, roleHint)}
-      <div class="role-line">
-        <select id="role" aria-label="角色">
-          <option value="auto"${selected(s.roleSource === "sync.json.followServer" ? "auto" : "", "auto")}>自动（跟随 sync.json）</option>
-          <option value="master"${selected(s.role, "master")}>主机（master）</option>
-          <option value="slave"${selected(s.role, "slave")}>从机（slave）</option>
-        </select>
-        <button type="button" id="apply-role">应用</button>
-        <button type="button" id="sync-now">立即同步</button>
+    <section class="banner ${tone}" role="status">
+      <span class="dot"></span>
+      <div class="banner-text">
+        <strong>${esc(statusTitle(s))}</strong>
+        <p>${esc(notice || (s.ok === false ? "查看下方状态" : "账号同步链路运行中"))}</p>
       </div>
-      <p id="apply-status" class="muted">切换后会写入本机的 <code>workbuddy-sync.json</code>，不会改变其他机器。</p>
+      <time>${esc(when(s.generatedAt))}</time>
     </section>
 
-    <section class="card">
-      <h2>同步状态</h2>
-      ${row("GitHub 仓库", s.repo)}
-      ${row("快照文件", s.path)}
-      ${row("分支", s.branch || "默认分支")}
-      ${row("WorkBuddy 账号数", s.accountCount)}
-      ${row("generation", s.generation)}
-      ${row("masterId", s.masterId)}
-      ${row("最后发布", s.lastPushAt)}
-      ${row("最后拉取", s.lastPullAt)}
-    </section>
+    <div class="grid">
+      <section class="card">
+        <div class="card-head"><h2>同步角色</h2><span class="pill ${s.role === "master" ? "accent" : ""}">${esc(role)}</span></div>
+        <p class="hint">${esc(roleDescription(s))}</p>
+        <label class="field"><span>这台电脑作为</span>
+          <select id="role">
+            <option value="auto"${auto ? " selected" : ""}>自动（跟随 sync.json）</option>
+            <option value="master"${!auto && s.role === "master" ? " selected" : ""}>主机（master）</option>
+            <option value="slave"${!auto && s.role === "slave" ? " selected" : ""}>从机（slave）</option>
+          </select>
+        </label>
+        <div class="form-actions">
+          <button type="button" id="apply-role" class="primary">应用角色</button>
+          <span id="apply-status" class="hint" role="status">只影响这台电脑</span>
+        </div>
+        <p class="hint role-hint">${esc(roleHint)}</p>
+      </section>
 
-    <section class="card">
-      <h2>说明</h2>
-      <p>主机只上传；从机只下载并写入 access token，<b>不保存 refresh token</b>，因此不会参与 WorkBuddy 的鉴权刷新。</p>
-      <p>主机发布的是整份加密快照；只有账号或 token 变化时才会上传，未变化不会产生新提交。快照只有几十 KB，不做增量分片。</p>
-      <p>从机的 WorkBuddy Plus 不要开启定时任务；任务只在主机跑。</p>
-    </section>
+      <section class="card">
+        <div class="card-head"><h2>账号状态</h2><span class="pill">${esc(s.accountCount || 0)} 个账号</span></div>
+        <div class="stats">
+          ${stat("WorkBuddy 账号", s.accountCount ?? 0)}
+          ${stat("快照 generation", s.generation || 0)}
+          ${stat("最后发布", when(s.lastPushAt))}
+          ${stat("最后拉取", when(s.lastPullAt))}
+        </div>
+        <details class="details">
+          <summary>连接详情</summary>
+          ${row("GitHub 仓库", s.repo)}
+          ${row("快照文件", s.path)}
+          ${row("分支", s.branch || "默认分支")}
+          ${row("机器 ID", s.machineId)}
+        </details>
+      </section>
+
+      <section class="card full">
+        <div class="card-head"><h2>它怎么工作</h2></div>
+        <ul class="notes">
+          <li><b>主机</b>正常登录 WorkBuddy，官方插件负责唯一一次刷新；本插件把账号加密后发布到 Magpie 已有的 GitHub 同步仓库。</li>
+          <li><b>从机</b>只拿到 access token，条目里没有 refresh token；即使误点重新登录，下一轮也会被清理。</li>
+          <li>只有账号或 token 变化时才会上传，轮询本身不会产生新 commit；当前快照是整份小文件，不做增量分片。</li>
+          <li>WorkBuddy Plus 的定时任务只在主机开启，从机不要重复执行。</li>
+        </ul>
+      </section>
+    </div>
   `;
-  const button = document.getElementById("apply-role");
-  if (button) button.addEventListener("click", applyRole);
-  const sync = document.getElementById("sync-now");
-  if (sync) sync.addEventListener("click", () => applyOption({ action: "sync" }, "已请求同步，Magpie 会重载插件并立即拉取/发布。"));
+  document.getElementById("apply-role")?.addEventListener("click", applyRole);
 }
 
 reload.addEventListener("click", () => location.reload());
+syncNow.addEventListener("click", () => applyOption({ action: "sync" }, "已请求同步，Magpie 会重载插件并立即拉取/发布。"));
 render();
 if (globalThis.magpie?.ready) {
   globalThis.magpie.ready.then(() => render()).catch(() => {});
@@ -114,6 +157,6 @@ if (globalThis.magpie?.ready) {
 // data.js; a light reload keeps the status current without a manual click.
 setInterval(() => {
   const active = document.activeElement;
-  if (document.hidden || active?.tagName === "SELECT" || active?.tagName === "BUTTON") return;
+  if (document.hidden || active?.tagName === "SELECT" || active?.tagName === "BUTTON" || document.querySelector("details[open]")) return;
   location.reload();
 }, 20_000);
