@@ -143,8 +143,9 @@ Magpie 的检索逻辑在 `internal/plugin/github.go`：用 GitHub Search 查 `t
 | `token` | 覆盖 GitHub token |
 | `passphrase` | 覆盖加密口令（主机和从机必须一致） |
 | `allowEmpty` | 主机没有 WorkBuddy 账号时也发布空快照；默认 `false` |
+| `allowMasterChange` | 明确允许本机替换 GitHub 上已有的主机快照；默认 `false`，用于接管旧主机 |
 
-`workbuddy-sync.json` 是本机文件，不会进入 Magpie 的同步。整个同步链路只应有一台 `master`；多台主机同时发布会产生 generation 竞争，请只在主机上设 `master`。
+`workbuddy-sync.json` 是本机文件，不会进入 Magpie 的同步。整个同步链路只应有一台 `master`；如果 GitHub 上已经有另一台 master 的快照，本机会拒绝发布并在页面提示。要接管旧主机，先确认旧主机停止同步，再设置 `allowMasterChange: true`。
 
 ## 安全
 
