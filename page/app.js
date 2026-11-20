@@ -26,7 +26,7 @@ function roleDescription(s) {
 
 function statusTone(s) {
   if (s.ok === false) return "bad";
-  if (s.warning || s.securityWarning) return "warn";
+  if (s.warning) return "warn";
   return "ok";
 }
 
@@ -85,7 +85,7 @@ function render() {
   const tone = statusTone(s);
   const role = roleName(s.role);
   const auto = s.roleSource === "sync.json.followServer";
-  const notice = s.error || s.warning || s.securityWarning || "";
+  const notice = s.error || s.warning || "";
   const roleHint = auto ? "跟随 Magpie 的同步设置自动判断" : "已由本机 workbuddy-sync.json 固定";
   content.innerHTML = `
     <section class="banner ${tone}" role="status">
@@ -139,6 +139,7 @@ function render() {
           <li><b>从机</b>只拿到 access token，条目里没有 refresh token；即使误点重新登录，下一轮也会被清理。</li>
           <li>只有账号或 token 变化时才会上传，轮询本身不会产生新 commit；当前快照是整份小文件，不做增量分片。</li>
           <li>WorkBuddy Plus 的定时任务只在主机开启，从机不要重复执行。</li>
+          ${s.securityWarning ? `<li class="security-note">${esc(s.securityWarning)}</li>` : ""}
         </ul>
       </section>
     </div>

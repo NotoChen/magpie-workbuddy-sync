@@ -96,3 +96,4 @@ button.quiet:hover { border-color: color-mix(in srgb, var(--wb-muted) 55%, var(-
 @media (prefers-reduced-motion: reduce) {
   button { transition: none; }
 }
+.security-note { color: var(--wb-warn); }
