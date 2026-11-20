@@ -118,7 +118,7 @@ function render() {
         </label>
         <div class="form-actions">
           <button type="button" id="apply-role" class="primary">应用角色</button>
-          <button type="button" id="takeover" class="quiet">接管主机</button>
+          ${s.role === "master" ? "" : '<button type="button" id="takeover" class="quiet">接管主机</button>'}
           <span id="apply-status" class="hint" role="status">只影响这台电脑</span>
         </div>
         <p class="hint role-hint">${esc(roleHint)}</p>
@@ -143,6 +143,13 @@ function render() {
           ${row("机器 ID", s.machineId)}
         </details>
       </section>
+
+      ${s.role === "master" ? `
+      <section class="card">
+        <div class="card-head"><h2>从机</h2><span class="pill">${esc(s.followerCount || 0)} 台在线</span></div>
+        ${s.followers?.length ? `<div class="follower-list">${s.followers.map((f) => `<div class="follower"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span>${esc(when(f.lastSeen))}</span></div>`).join("")}</div>` : '<p class="hint">还没有从机上报。从机启动后会自动写一条心跳。</p>'}
+        <p class="hint">从机每 ${esc(s.presenceMinutes || 60)} 分钟检查一次，超过 ${esc(s.presenceStaleMinutes || 180)} 分钟未上报会显示为离线。</p>
+      </section>` : ""}
 
       <section class="card full">
         <div class="card-head"><h2>它怎么工作</h2></div>

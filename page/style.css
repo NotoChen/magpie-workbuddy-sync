@@ -97,3 +97,8 @@ button.quiet:hover { border-color: color-mix(in srgb, var(--wb-muted) 55%, var(-
   button { transition: none; }
 }
 .security-note { color: var(--wb-warn); }
+.follower-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.follower { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid color-mix(in srgb, var(--wb-line) 55%, transparent); font-size: 12px; }
+.follower:last-child { border-bottom: 0; }
+.follower b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.follower span { color: var(--wb-muted); white-space: nowrap; }

@@ -143,7 +143,10 @@ Magpie 的检索逻辑在 `internal/plugin/github.go`：用 GitHub Search 查 `t
 | `token` | 覆盖 GitHub token |
 | `passphrase` | 覆盖加密口令（主机和从机必须一致） |
 | `allowEmpty` | 主机没有 WorkBuddy 账号时也发布空快照；默认 `false` |
-| `allowMasterChange` | 明确允许本机替换 GitHub 上已有的主机快照；默认 `false`，用于接管旧主机 |
+| `allowMasterChange` | 只允许一次的主机接管开关；默认 `false`，用于接管旧主机 |
+| `name` | 本机显示名，例如 `书房 Mac`，用于主机页面的从机列表 |
+| `presenceMinutes` | 从机心跳间隔，5–1440 分钟，默认 60 |
+| `presenceStaleMinutes` | 超过多少分钟没有心跳算离线，默认 180 |
 
 `workbuddy-sync.json` 是本机文件，不会进入 Magpie 的同步。整个同步链路只应有一台 `master`。
 
