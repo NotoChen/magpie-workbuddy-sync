@@ -15,22 +15,24 @@ function when(value) {
 }
 
 function roleName(role) {
-  return role === "master" ? "主机" : role === "slave" ? "从机" : role || "未知";
+  return role === "master" ? "主机" : role === "slave" ? "从机" : "未设置";
 }
 
 function roleDescription(s) {
   if (s.role === "master") return "本机负责刷新 WorkBuddy 凭据，并把账号发布到 GitHub。";
   if (s.role === "slave") return "本机只接收主机发布的 access token，不参与鉴权刷新。";
-  return "尚未确定角色。";
+  return "非跟随机器默认不参与同步；请在下面选择主机或从机。";
 }
 
 function statusTone(s) {
+  if (s.role === "unconfigured") return "warn";
   if (s.ok === false) return "bad";
   if (s.warning) return "warn";
   return "ok";
 }
 
 function statusTitle(s) {
+  if (s.role === "unconfigured") return "请选择角色";
   if (s.ok === false) return "需要处理";
   if (String(s.message || "").startsWith("published")) return "已发布到 GitHub";
   if (String(s.message || "").startsWith("applied")) return "已应用主机的账号";
@@ -84,9 +86,11 @@ function render() {
   }
   const tone = statusTone(s);
   const role = roleName(s.role);
-  const auto = s.roleSource === "sync.json.followServer";
+  const auto = s.roleSource === "sync.json.followServer" || s.roleSource === "unset";
   const notice = s.error || s.warning || "";
-  const roleHint = auto ? "跟随 Magpie 的同步设置自动判断" : "已由本机 workbuddy-sync.json 固定";
+  const roleHint = s.roleSource === "sync.json.followServer"
+    ? "跟随 Magpie 的同步设置：当前为从机"
+    : s.roleSource === "unset" ? "非跟随机器默认不参与同步；请选择主机或从机" : "已由本机 workbuddy-sync.json 固定";
   content.innerHTML = `
     <section class="banner ${tone}" role="status">
       <span class="dot"></span>

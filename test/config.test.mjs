@@ -27,6 +27,14 @@ test("role follows sync.json.followServer", async () => {
     followServer: true,
   }), "utf8");
   assert.equal(loadConfig(dir).role, "slave");
+  await writeFile(join(dir, "sync.json"), JSON.stringify({
+    url: "github://owner/repo",
+    password: "token",
+    passphrase: "pass",
+    followServer: false,
+  }), "utf8");
+  assert.equal(loadConfig(dir).role, "unconfigured");
+  assert.equal(loadConfig(dir).roleSource, "unset");
   await writeFile(join(dir, "workbuddy-sync.json"), JSON.stringify({ role: "master" }), "utf8");
   assert.equal(loadConfig(dir).role, "master");
   assert.equal(loadConfig(dir).roleSource, "workbuddy-sync.json");

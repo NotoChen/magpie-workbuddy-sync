@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { SyncEngine } from "../lib/sync.mjs";
 
-async function home(followServer) {
+async function home(followServer, role) {
   const dir = await mkdtemp(join(tmpdir(), "workbuddy-sync-home-"));
   await writeFile(join(dir, "sync.json"), JSON.stringify({
     url: "github://owner/private-repo",
@@ -13,6 +13,7 @@ async function home(followServer) {
     passphrase: "sync-passphrase",
     followServer,
   }), "utf8");
+  if (role) await writeFile(join(dir, "workbuddy-sync.json"), JSON.stringify({ role }), "utf8");
   return dir;
 }
 
@@ -34,7 +35,7 @@ function fakeStore() {
 }
 
 test("master publishes, follower applies access-only accounts", async () => {
-  const master = await home(false);
+  const master = await home(false, "master");
   const slave = await home(true);
   await writeFile(join(master, "plugin-auth.json"), JSON.stringify({
     workbuddy: { type: "oauth", access: "a1", refresh: "r1", uid: "u1", accountId: "一号", expires: 111 },
@@ -82,4 +83,35 @@ test("follower strips a refresh token written after the first sync", async () =>
   assert.equal(saved.workbuddy.refresh, undefined);
   assert.equal(saved.workbuddy.expires, 0);
   assert.equal(saved.workbuddy.access, "a");
+});
+
+import { sealData } from "../lib/crypto.mjs";
+
+test("a second master does not overwrite the first master's snapshot", async () => {
+  const master = await home(false, "master");
+  await writeFile(join(master, "plugin-auth.json"), JSON.stringify({
+    workbuddy: { type: "oauth", access: "a1", refresh: "r1", uid: "u1", accountId: "一号", expires: 111 },
+  }), "utf8");
+  const store = fakeStore();
+  store.data = await sealData({ version: 1, masterId: "another-master", generation: 9, accounts: {} }, "sync-passphrase");
+  store.sha = "existing-sha";
+  const pluginDir = await mkdtemp(join(tmpdir(), "workbuddy-sync-plugin-"));
+  await mkdir(join(pluginDir, "page"), { recursive: true });
+  const engine = new SyncEngine({ dir: master, pluginDir, options: { storeFactory: () => store }, log: () => {} });
+  const result = await engine.runOnce();
+  assert.equal(result.ok, false);
+  assert.match(result.message, /another master/);
+  assert.equal(store.writes, 0);
+});
+
+test("a non-following machine without a role does not publish", async () => {
+  const dir = await home(false);
+  const pluginDir = await mkdtemp(join(tmpdir(), "workbuddy-sync-plugin-"));
+  await mkdir(join(pluginDir, "page"), { recursive: true });
+  const store = fakeStore();
+  const engine = new SyncEngine({ dir, pluginDir, options: { storeFactory: () => store }, log: () => {} });
+  const result = await engine.runOnce();
+  assert.equal(result.ok, false);
+  assert.equal(result.message, "role not selected");
+  assert.equal(store.writes, 0);
 });
