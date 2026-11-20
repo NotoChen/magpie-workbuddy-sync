@@ -47,3 +47,6 @@ button:hover { background: var(--card); }
 .help { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
 .help pre { padding: 10px 12px; border-radius: 8px; background: var(--card); overflow: auto; }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.role-line { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.role-line select { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--magpie-bg, #fff); color: inherit; }
+.role-line button { white-space: nowrap; }
