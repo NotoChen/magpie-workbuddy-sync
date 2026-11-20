@@ -1,6 +1,6 @@
 {
   "name": "magpie-workbuddy-sync",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Sync WorkBuddy and WorkBuddy AI accounts between Magpie computers through Magpie's own GitHub sync repository: the master publishes access tokens, followers apply them read-only and never refresh.",
   "type": "module",
   "main": "./index.mjs",

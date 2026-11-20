@@ -31,6 +31,9 @@ function fakeStore() {
       this.sha = `sha-${this.data.length}-${Date.now()}`;
       return { sha: this.sha };
     },
+    async writeIf(_file, bytes) {
+      return this.write(_file, bytes);
+    },
   };
 }
 
@@ -85,7 +88,7 @@ test("follower strips a refresh token written after the first sync", async () =>
   assert.equal(saved.workbuddy.access, "a");
 });
 
-import { sealData } from "../lib/crypto.mjs";
+import { openData, sealData } from "../lib/crypto.mjs";
 
 test("a second master does not overwrite the first master's snapshot", async () => {
   const master = await home(false, "master");
@@ -114,4 +117,32 @@ test("a non-following machine without a role does not publish", async () => {
   assert.equal(result.ok, false);
   assert.equal(result.message, "role not selected");
   assert.equal(store.writes, 0);
+});
+
+test("explicit takeover moves the lease and fences the old master", async () => {
+  const a = await home(false, "master");
+  const b = await home(false, "master");
+  await writeFile(join(b, "workbuddy-sync.json"), JSON.stringify({ role: "master", allowMasterChange: true }), "utf8");
+  for (const dir of [a, b]) {
+    await writeFile(join(dir, "plugin-auth.json"), JSON.stringify({
+      workbuddy: { type: "oauth", access: "a", refresh: "r", uid: "u", accountId: "账号", expires: 111 },
+    }), "utf8");
+  }
+  const store = fakeStore();
+  const pluginDir = await mkdtemp(join(tmpdir(), "workbuddy-sync-plugin-"));
+  await mkdir(join(pluginDir, "page"), { recursive: true });
+  const ea = new SyncEngine({ dir: a, pluginDir, options: { storeFactory: () => store }, log: () => {} });
+  const eb = new SyncEngine({ dir: b, pluginDir, options: { storeFactory: () => store }, log: () => {} });
+  assert.equal((await ea.runOnce()).ok, true);
+  const first = await openData(store.data, "sync-passphrase");
+  assert.equal(first.lease.owner, first.masterId); // A owns the first lease
+  const takeover = await eb.runOnce();
+  assert.equal(takeover.ok, true);
+  const after = await openData(store.data, "sync-passphrase");
+  assert.equal(after.lease.owner, takeover.masterId);
+  assert.ok(after.lease.epoch >= 2);
+  // A wakes after the takeover: it must not overwrite B's lease.
+  const fenced = await ea.runOnce();
+  assert.equal(fenced.ok, false);
+  assert.match(fenced.message, /another master/);
 });

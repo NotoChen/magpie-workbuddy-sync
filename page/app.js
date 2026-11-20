@@ -78,6 +78,10 @@ function applyRole() {
   return applyOption({ action: "set-role", role: select.value }, "已提交，Magpie 会重载插件。");
 }
 
+function takeover() {
+  return applyOption({ action: "takeover" }, "已申请接管主机；旧主机会在下次发布时发现租约已转移并停止。");
+}
+
 function render() {
   const s = globalThis.WORKBUDDY_SYNC;
   if (!s) {
@@ -114,9 +118,11 @@ function render() {
         </label>
         <div class="form-actions">
           <button type="button" id="apply-role" class="primary">应用角色</button>
+          <button type="button" id="takeover" class="quiet">接管主机</button>
           <span id="apply-status" class="hint" role="status">只影响这台电脑</span>
         </div>
         <p class="hint role-hint">${esc(roleHint)}</p>
+        <p class="hint">“接管主机”会显式覆盖旧主机的租约，适合旧主机已经停机或准备迁移的场景；旧主机下次发布会自动停止。</p>
       </section>
 
       <section class="card">
@@ -132,6 +138,8 @@ function render() {
           ${row("GitHub 仓库", s.repo)}
           ${row("快照文件", s.path)}
           ${row("分支", s.branch || "默认分支")}
+          ${row("主机租约", s.leaseOwner ? `${s.leaseOwner.slice(0, 12)}… · epoch ${s.leaseEpoch || 0}` : "尚未建立")}
+          ${row("租约到期", when(s.leaseExpiresAt ? new Date(s.leaseExpiresAt).toISOString() : ""))}
           ${row("机器 ID", s.machineId)}
         </details>
       </section>
@@ -149,6 +157,7 @@ function render() {
     </div>
   `;
   document.getElementById("apply-role")?.addEventListener("click", applyRole);
+  document.getElementById("takeover")?.addEventListener("click", takeover);
 }
 
 reload.addEventListener("click", () => location.reload());
