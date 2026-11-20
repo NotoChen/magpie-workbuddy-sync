@@ -20,11 +20,13 @@ function fakeStore() {
   return {
     data: null,
     sha: "",
+    writes: 0,
     async read() {
       return this.data ? { data: Buffer.from(this.data), sha: this.sha } : null;
     },
     async write(_file, bytes) {
       this.data = Buffer.from(bytes);
+      this.writes += 1;
       this.sha = `sha-${this.data.length}-${Date.now()}`;
       return { sha: this.sha };
     },
@@ -49,6 +51,9 @@ test("master publishes, follower applies access-only accounts", async () => {
   const published = await masterEngine.runOnce();
   assert.equal(published.ok, true);
   assert.equal(published.accountCount, 3);
+  const second = await masterEngine.runOnce();
+  assert.equal(second.ok, true);
+  assert.equal(store.writes, 1, "an unchanged master does not upload again");
 
   const slaveEngine = new SyncEngine({ dir: slave, pluginDir, options: { storeFactory: () => store }, log: () => {} });
   const applied = await slaveEngine.runOnce();
