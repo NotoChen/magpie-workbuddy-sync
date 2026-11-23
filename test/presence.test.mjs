@@ -42,6 +42,7 @@ test("a follower checks in, and the master lists it", async () => {
   assert.equal(followers.length, 1);
   assert.equal(followers[0].alias, "书房 Mac");
   assert.equal(followers[0].machineId, "machine-a");
+  assert.equal((await listFollowers(s, c, Date.now(), "machine-a")).length, 0);
   assert.equal(presenceDir(c), "workbuddy/followers");
 });
 

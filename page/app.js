@@ -36,6 +36,18 @@ function when(value) {
   return date.toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+function ago(value) {
+  if (!value) return "尚未";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60_000));
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes} 分钟前`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} 小时前`;
+  return `${Math.round(hours / 24)} 天前`;
+}
+
 function roleName(role) {
   return role === "master" ? "主机" : role === "slave" ? "从机" : "未设置";
 }
@@ -184,7 +196,7 @@ function render() {
       ${s.role === "master" ? `
       <section class="card">
         <div class="card-head"><h2>从机</h2><span class="pill">${esc(s.followerCount || 0)} 台在线${s.followerTotal > s.followerCount ? ` · ${esc(s.followerTotal - s.followerCount)} 台离线` : ""}</span></div>
-        ${s.followers?.length ? `<div class="follower-list">${s.followers.map((f) => `<div class="follower${f.online === false ? " offline" : ""}"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span>${esc(when(f.lastSeen))}</span></div>`).join("")}</div>` : '<p class="hint">还没有从机上报。从机启动后会自动写一条心跳。</p>'}
+        ${s.followers?.length ? `<div class="follower-list">${s.followers.map((f) => `<div class="follower${f.online === false ? " offline" : ""}"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span>${esc(f.online === false ? `离线 · ${ago(f.lastSeen)}` : ago(f.lastSeen))}</span></div>`).join("")}</div>` : '<p class="hint">还没有从机上报。从机启动后会自动写一条心跳。</p>'}
         <p class="hint">从机每 ${esc(s.presenceMinutes || 60)} 分钟检查一次，超过 ${esc(s.presenceStaleMinutes || 180)} 分钟未上报会显示为离线。</p>
       </section>` : ""}
 
