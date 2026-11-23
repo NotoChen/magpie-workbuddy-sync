@@ -16,4 +16,18 @@ test("page role commands change only their own machine", async () => {
   assert.equal(await applyPageCommand(dir, { action: "set-role", machine: "mine", role: "auto" }, "mine"), true);
   saved = JSON.parse(await readFile(join(dir, "workbuddy-sync.json"), "utf8"));
   assert.equal(saved.role, undefined);
+  assert.equal(await applyPageCommand(dir, { action: "set-name", machine: "mine", name: " 书房 Mac " }, "mine"), true);
+  saved = JSON.parse(await readFile(join(dir, "workbuddy-sync.json"), "utf8"));
+  assert.equal(saved.name, "书房 Mac");
+  assert.equal(saved.pollSeconds, 20);
+  assert.equal(await applyPageCommand(dir, { action: "takeover", machine: "mine" }, "mine"), true);
+  saved = JSON.parse(await readFile(join(dir, "workbuddy-sync.json"), "utf8"));
+  assert.equal(saved.role, "master");
+  assert.equal(saved.allowMasterChange, true);
+  assert.equal(await applyPageCommand(dir, { action: "set-role", machine: "mine", role: "slave" }, "mine"), true);
+  saved = JSON.parse(await readFile(join(dir, "workbuddy-sync.json"), "utf8"));
+  assert.equal(saved.allowMasterChange, undefined);
+  assert.equal(await applyPageCommand(dir, { action: "set-name", machine: "mine", name: "   " }, "mine"), true);
+  saved = JSON.parse(await readFile(join(dir, "workbuddy-sync.json"), "utf8"));
+  assert.equal(saved.name, undefined);
 });

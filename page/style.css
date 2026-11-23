@@ -103,3 +103,5 @@ button.quiet:hover { border-color: color-mix(in srgb, var(--wb-muted) 55%, var(-
 .follower b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .follower span { color: var(--wb-muted); white-space: nowrap; }
 .follower.offline { opacity: .55; }
+.field input { width: 100%; font: inherit; font-size: 13px; color: var(--wb-fg); padding: 6px 9px; border: 1px solid var(--wb-line); border-radius: 8px; background: var(--magpie-bg, transparent); }
+.field input:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }

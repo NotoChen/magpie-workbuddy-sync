@@ -81,10 +81,10 @@ function stat(name, value) {
   return `<div class="stat"><strong>${esc(value)}</strong><span>${esc(name)}</span></div>`;
 }
 
-async function applyOption(command, message) {
+async function applyOption(command, message, statusId = "apply-status") {
   if (busy) return;
   const s = globalThis.WORKBUDDY_SYNC;
-  const status = document.getElementById("apply-status");
+  const status = document.getElementById(statusId);
   if (!s?.machineId) {
     if (status) status.textContent = "状态还没有就绪，请稍后重试。";
     return;
@@ -110,6 +110,12 @@ function applyRole() {
   const select = document.getElementById("role");
   if (!select) return;
   return applyOption({ action: "set-role", role: select.value }, "已提交，Magpie 会重载插件。");
+}
+
+function saveName() {
+  const input = document.getElementById("machine-name");
+  if (!input) return;
+  return applyOption({ action: "set-name", name: input.value.trim() }, "名称已保存，Magpie 会重载插件。", "name-status");
 }
 
 function takeover(event) {
@@ -170,6 +176,13 @@ function render() {
           <span id="apply-status" class="hint" role="status">只影响这台电脑</span>
         </div>
         <p class="hint role-hint">${esc(roleHint)}</p>
+        <label class="field"><span>本机显示名（用于主机的从机列表）</span>
+          <input id="machine-name" type="text" maxlength="80" value="${esc(s.machineName || "")}" placeholder="例如 书房 Mac">
+        </label>
+        <div class="form-actions">
+          <button type="button" id="save-name" class="quiet">保存名称</button>
+          <span id="name-status" class="hint" role="status"></span>
+        </div>
         ${s.role === "master" ? "" : '<p class="hint">“接管主机”会显式覆盖旧主机的租约，适合旧主机已经停机或准备迁移的场景；旧主机下次发布会自动停止。</p>'}
       </section>
 
@@ -190,6 +203,11 @@ function render() {
           ${row("租约到期", when(s.leaseExpiresAt ? new Date(s.leaseExpiresAt).toISOString() : ""))}
           ${row("本机名称", s.machineName || "未设置")}
           ${row("机器 ID", s.machineId)}
+          ${row("最近检查", when(s.lastRunAt))}
+          ${row("检查耗时", s.lastRunMs ? `${s.lastRunMs} ms` : "—")}
+          ${row("轮询间隔", s.pollSeconds ? `${s.pollSeconds} 秒` : "—")}
+          ${row("最近成功", when(s.lastSuccessAt))}
+          ${row("最近错误", s.lastError ? `${s.lastError} · ${when(s.lastErrorAt)}` : "无")}
         </details>
       </section>
 
@@ -207,13 +225,13 @@ function render() {
           <li><b>从机</b>只拿到 access token，条目里没有 refresh token；即使误点重新登录，下一轮也会被清理。</li>
           <li>只有账号或 token 变化时才会上传，轮询本身不会产生新 commit；当前快照是整份小文件，不做增量分片。</li>
           <li>WorkBuddy Plus 的定时任务只在主机开启，从机不要重复执行。</li>
-          ${s.securityWarning ? `<li class="security-note">${esc(s.securityWarning)}</li>` : ""}
         </ul>
       </section>
     </div>
   `;
   document.getElementById("apply-role")?.addEventListener("click", applyRole);
   document.getElementById("takeover")?.addEventListener("click", takeover);
+  document.getElementById("save-name")?.addEventListener("click", saveName);
 }
 
 reload.addEventListener("click", () => void refreshStatus());
