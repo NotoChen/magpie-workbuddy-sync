@@ -5,6 +5,9 @@ let busy = false;
 let refreshing = false;
 let takeoverArmed = false;
 let activeTab = "overview";
+try {
+  activeTab = sessionStorage.getItem("workbuddy-sync-tab") || "overview";
+} catch {}
 
 async function refreshStatus() {
   if (refreshing) return;
@@ -339,6 +342,7 @@ function render() {
   content.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       activeTab = button.dataset.tab || "overview";
+      try { sessionStorage.setItem("workbuddy-sync-tab", activeTab); } catch {}
       render();
     });
   });
