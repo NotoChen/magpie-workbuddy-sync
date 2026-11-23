@@ -188,3 +188,21 @@ test("changing the repository keeps the machine identity", async () => {
   assert.equal(engine.state.machineId, "machine-1");
   assert.equal(engine.state.localMasterId, "local-1");
 });
+
+test("master publishes only selected accounts", async () => {
+  const dir = await home(false, "master");
+  await writeFile(join(dir, "workbuddy-sync.json"), JSON.stringify({ role: "master", includeAccounts: ["workbuddy"] }), "utf8");
+  await writeFile(join(dir, "plugin-auth.json"), JSON.stringify({
+    workbuddy: { type: "oauth", access: "a1", refresh: "r1", uid: "u1", accountId: "一号", expires: 111 },
+    "workbuddy#b": { type: "oauth", access: "a2", refresh: "r2", uid: "u2", accountId: "二号", expires: 222 },
+  }), "utf8");
+  const store = fakeStore();
+  const pluginDir = await mkdtemp(join(tmpdir(), "workbuddy-sync-plugin-"));
+  await mkdir(join(pluginDir, "page"), { recursive: true });
+  const engine = new SyncEngine({ dir, pluginDir, options: { storeFactory: () => store }, log: () => {} });
+  const result = await engine.runOnce();
+  assert.equal(result.ok, true);
+  assert.equal(result.accountCount, 1);
+  const payload = await openData(store.data, "sync-passphrase");
+  assert.deepEqual(Object.keys(payload.accounts), ["workbuddy"]);
+});

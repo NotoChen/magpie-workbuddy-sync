@@ -35,9 +35,13 @@ function store() {
 test("a follower checks in, and the master lists it", async () => {
   const s = store();
   const c = config();
-  const state = { machineId: "machine-a", lastPresenceAt: "" };
+  const state = { machineId: "machine-a", lastPresenceAt: "", generation: 7, accountCount: 10, lastPullAt: "2026-11-23T06:00:00.000Z" };
   assert.equal(await checkIn(s, c, state), true);
   assert.ok(s.files.has(presenceFile(c, "machine-a")));
+  const heartbeat = JSON.parse(s.files.get(presenceFile(c, "machine-a")));
+  assert.equal(heartbeat.appliedGeneration, 7);
+  assert.equal(heartbeat.accountCount, 10);
+  assert.equal(heartbeat.appliedAt, "2026-11-23T06:00:00.000Z");
   const followers = await listFollowers(s, c);
   assert.equal(followers.length, 1);
   assert.equal(followers[0].alias, "书房 Mac");

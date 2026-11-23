@@ -48,6 +48,17 @@ function ago(value) {
   return `${Math.round(hours / 24)} 天前`;
 }
 
+function expiryLabel(account) {
+  if (!account.expires) return account.type === "api" ? "API Key" : "长期有效";
+  if (account.daysLeft < 0) return "已过期";
+  if (account.daysLeft === 0) return "今天到期";
+  return `${account.daysLeft} 天后到期`;
+}
+
+function eventName(type) {
+  return ({ publish: "发布", apply: "应用", error: "错误", names: "改名" }[type] || type);
+}
+
 function roleName(role) {
   return role === "master" ? "主机" : role === "slave" ? "从机" : "未设置";
 }
@@ -116,6 +127,43 @@ function saveName() {
   const input = document.getElementById("machine-name");
   if (!input) return;
   return applyOption({ action: "set-name", name: input.value.trim() }, "名称已保存，Magpie 会重载插件。", "name-status");
+}
+
+function saveAccountSelection() {
+  const accounts = [...document.querySelectorAll(".account-check:checked")].map((input) => input.value);
+  if (!accounts.length) {
+    const status = document.getElementById("account-status");
+    if (status) status.textContent = "至少选择一个账号；否则从机不会收到任何 WorkBuddy 账号。";
+    return;
+  }
+  return applyOption({ action: "set-accounts", accounts }, "账号选择已保存，Magpie 会重载插件。", "account-status");
+}
+
+function selectAccounts(all) {
+  document.querySelectorAll(".account-check").forEach((input) => { input.checked = all; });
+}
+
+async function copyDiagnostics() {
+  const s = globalThis.WORKBUDDY_SYNC;
+  const button = document.getElementById("copy-diagnostics");
+  if (!s) return;
+  const text = JSON.stringify(s, null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+  }
+  if (button) {
+    button.textContent = "已复制";
+    setTimeout(() => { button.textContent = "复制诊断"; }, 1800);
+  }
 }
 
 function takeover(event) {
@@ -212,10 +260,31 @@ function render() {
       </section>
 
       ${s.role === "master" ? `
+      <section class="card full">
+        <div class="card-head"><h2>账号健康</h2><span class="pill">${esc((s.accountHealth || []).length)} 个账号</span></div>
+        ${(s.accountHealth || []).length ? `<div class="account-list">${s.accountHealth.map((a) => `
+          <label class="account-row${a.daysLeft !== null && a.daysLeft < 0 ? " expired" : ""}">
+            <input type="checkbox" class="account-check" value="${esc(a.key)}"${a.included ? " checked" : ""}>
+            <span class="account-main"><b>${esc(a.accountId || a.key)}</b><small>${esc(a.type === "api" ? "API Key" : (a.domain || "OAuth"))}${a.plan ? ` · ${esc(a.plan)}` : ""}</small></span>
+            <span class="account-expiry">${esc(expiryLabel(a))}</span>
+          </label>`).join("")}</div>
+        <div class="account-actions">
+          <button type="button" id="select-all-accounts" class="quiet">全选</button>
+          <button type="button" id="select-none-accounts" class="quiet">全不选</button>
+          <button type="button" id="save-accounts" class="primary">保存选择</button>
+          <span id="account-status" class="hint" role="status">勾选的账号才会同步到从机</span>
+        </div>` : '<p class="hint">本机还没有可发布的 WorkBuddy 账号。</p>'}
+      </section>
+
+      <section class="card full">
+        <div class="card-head"><h2>最近事件</h2><span class="pill">最近 ${esc((s.events || []).length)} 条</span></div>
+        ${(s.events || []).length ? `<ul class="events">${s.events.slice(0, 8).map((e) => `<li><time>${esc(when(e.at))}</time><b>${esc(eventName(e.type))}</b><span>${esc(e.detail || "")}</span></li>`).join("")}</ul>` : '<p class="hint">还没有事件记录。</p>'}
+      </section>
+
       <section class="card">
         <div class="card-head"><h2>从机</h2><span class="pill">${esc(s.followerCount || 0)} 台在线${s.followerTotal > s.followerCount ? ` · ${esc(s.followerTotal - s.followerCount)} 台离线` : ""}</span></div>
         ${s.followers?.length ? `<div class="follower-list">${s.followers.map((f) => `<div class="follower${f.online === false ? " offline" : ""}">
-          <div class="follower-main"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span>${esc(f.online === false ? `离线 · ${ago(f.lastSeen)}` : ago(f.lastSeen))}</span></div>
+          <div class="follower-main"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span class="${s.generation && f.appliedGeneration && f.appliedGeneration < s.generation ? "behind" : ""}">${esc(f.online === false ? `离线 · ${ago(f.lastSeen)}` : ago(f.lastSeen))} · ${f.appliedGeneration ? `gen ${f.appliedGeneration}` : "未应用"} · ${esc(f.accountCount || 0)} 账号</span></div>
           <div class="follower-edit"><input class="follower-name" type="text" maxlength="80" value="${esc(f.alias || "")}" placeholder="设置名称"><button type="button" class="quiet" data-follower-save data-follower-id="${esc(f.machineId)}">保存</button><span class="hint" id="follower-status-${esc(f.machineId)}"></span></div>
         </div>`).join("")}</div>` : '<p class="hint">还没有从机上报。从机启动后会自动写一条心跳。</p>'}
         <p class="hint">从机每 ${esc(s.presenceMinutes || 60)} 分钟检查一次，超过 ${esc(s.presenceStaleMinutes || 180)} 分钟未上报会显示为离线。</p>
@@ -235,6 +304,9 @@ function render() {
   document.getElementById("apply-role")?.addEventListener("click", applyRole);
   document.getElementById("takeover")?.addEventListener("click", takeover);
   document.getElementById("save-name")?.addEventListener("click", saveName);
+  document.getElementById("save-accounts")?.addEventListener("click", saveAccountSelection);
+  document.getElementById("select-all-accounts")?.addEventListener("click", () => selectAccounts(true));
+  document.getElementById("select-none-accounts")?.addEventListener("click", () => selectAccounts(false));
   document.querySelectorAll("[data-follower-save]").forEach((button) => {
     button.addEventListener("click", () => {
       const id = button.dataset.followerId || "";
@@ -245,6 +317,7 @@ function render() {
 }
 
 reload.addEventListener("click", () => void refreshStatus());
+document.getElementById("copy-diagnostics")?.addEventListener("click", () => void copyDiagnostics());
 syncNow.addEventListener("click", () => applyOption({ action: "sync" }, "已请求同步，Magpie 会重载插件并立即拉取/发布。"));
 render();
 if (globalThis.magpie?.ready) {
