@@ -56,6 +56,12 @@ test("master-provided follower names win over the local name", async () => {
   const written = JSON.parse(s.files.get(presenceFile(c, "machine-a")));
   assert.equal(written.alias, "主人命名");
   assert.equal((await listFollowers(s, c))[0].alias, "主人命名");
+  // A rename is pushed on the next poll, even inside the heartbeat window.
+  await writeNames(s, c, { "machine-a": "新名字" });
+  state.lastPresenceAt = new Date().toISOString();
+  state.presenceAlias = "主人命名";
+  assert.equal(await checkIn(s, c, state), true);
+  assert.equal(JSON.parse(s.files.get(presenceFile(c, "machine-a"))).alias, "新名字");
 });
 
 test("stale follower check-ins are not counted", async () => {
