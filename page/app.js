@@ -176,6 +176,7 @@ function render() {
           ${row("分支", s.branch || "默认分支")}
           ${row("主机租约", s.leaseOwner ? `${s.leaseOwner.slice(0, 12)}… · epoch ${s.leaseEpoch || 0}` : "尚未建立")}
           ${row("租约到期", when(s.leaseExpiresAt ? new Date(s.leaseExpiresAt).toISOString() : ""))}
+          ${row("本机名称", s.machineName || "未设置")}
           ${row("机器 ID", s.machineId)}
         </details>
       </section>
