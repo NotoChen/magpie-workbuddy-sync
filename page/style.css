@@ -127,3 +127,22 @@ button.quiet:hover { border-color: color-mix(in srgb, var(--wb-muted) 55%, var(-
 .events b { font-weight: 500; color: var(--wb-fg); }
 .events span { color: var(--wb-muted); overflow-wrap: anywhere; }
 .follower-main span.behind { color: var(--wb-warn); font-weight: 500; }
+[hidden] { display: none !important; }
+.tabs { display: flex; gap: 2px; padding: 3px; margin-bottom: 12px; border: 1px solid var(--wb-line); border-radius: 9px; background: color-mix(in srgb, var(--wb-muted) 6%, transparent); overflow-x: auto; }
+.tab { border: 0; background: transparent; color: var(--wb-muted); padding: 5px 12px; border-radius: 6px; font-size: 12.5px; white-space: nowrap; }
+.tab:hover { color: var(--wb-fg); background: color-mix(in srgb, var(--wb-card) 70%, transparent); }
+.tab.active { color: var(--wb-fg); background: var(--wb-card); font-weight: 600; box-shadow: 0 1px 3px color-mix(in srgb, var(--wb-fg) 10%, transparent); }
+.panel { min-width: 0; }
+.overview-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 12px; align-items: start; }
+.diag-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.panel-head h2 { margin: 0; }
+.panel-head .hint { margin-top: 2px; }
+.panel > .card { margin-bottom: 12px; }
+.panel > .card:last-child { margin-bottom: 0; }
+.events-card, .notes-card { margin-top: 12px; }
+.notes-card summary { cursor: pointer; color: var(--wb-fg); font-size: 13px; font-weight: 600; }
+.notes-card .notes { margin-top: 8px; }
+@media (max-width: 720px) {
+  .overview-grid, .diag-grid { grid-template-columns: 1fr; }
+}
