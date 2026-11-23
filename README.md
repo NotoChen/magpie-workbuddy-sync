@@ -119,7 +119,7 @@ Magpie 的检索逻辑在 `internal/plugin/github.go`：用 GitHub Search 查 `t
 - 非跟随机器默认是“未设置”，避免第二台双向同步的机器自动变成另一个主机；
 - “立即同步”会重载插件并马上执行一次发布/拉取；
 - 状态区显示账号数、generation、最后发布/拉取时间和错误信息；连接详情里还能看到最近检查时间、检查耗时、轮询间隔、最近成功和最近错误；主机页面还会显示在线/离线从机数量、显示名和最后心跳。
-- 页面可以直接填写“本机显示名”，会写入本机 `workbuddy-sync.json` 的 `name`；主机的从机列表会显示这个名字。心跳文件只含 machineId、显示名和 lastSeen，不含 token。
+- 页面可以直接填写“本机显示名”，会写入本机 `workbuddy-sync.json` 的 `name`；主机的从机列表会显示这个名字。主机也可以在从机列表里直接给某台从机改名，名称写入 `workbuddy/followers/names.json`，从机下次心跳时生效。心跳文件只含 machineId、显示名和 lastSeen，不含 token。
 - Magpie 可能同时启动多个插件宿主（窗口、页面、CLI）；只有拿到 `workbuddy-sync.lock` 的宿主会写状态，其他宿主静默重试，不会把 “another process” 覆盖到页面。
 
 ## 配置

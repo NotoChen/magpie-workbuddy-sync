@@ -30,4 +30,10 @@ test("page role commands change only their own machine", async () => {
   assert.equal(await applyPageCommand(dir, { action: "set-name", machine: "mine", name: "   " }, "mine"), true);
   saved = JSON.parse(await readFile(join(dir, "workbuddy-sync.json"), "utf8"));
   assert.equal(saved.name, undefined);
+  assert.equal(await applyPageCommand(dir, { action: "set-follower-name", machine: "mine", followerId: "machine-a", name: "书房 Mac" }, "mine"), true);
+  saved = JSON.parse(await readFile(join(dir, "workbuddy-sync.json"), "utf8"));
+  assert.deepEqual(saved.followerNames, { "machine-a": "书房 Mac" });
+  assert.equal(await applyPageCommand(dir, { action: "set-follower-name", machine: "mine", followerId: "machine-a", name: "" }, "mine"), true);
+  saved = JSON.parse(await readFile(join(dir, "workbuddy-sync.json"), "utf8"));
+  assert.deepEqual(saved.followerNames, { "machine-a": "" });
 });

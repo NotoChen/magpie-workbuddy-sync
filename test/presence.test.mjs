@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkIn, listFollowers, presenceDir, presenceFile } from "../lib/presence.mjs";
+import { checkIn, listFollowers, presenceDir, presenceFile, readNames, writeNames } from "../lib/presence.mjs";
 
 function config(overrides = {}) {
   return {
@@ -44,6 +44,18 @@ test("a follower checks in, and the master lists it", async () => {
   assert.equal(followers[0].machineId, "machine-a");
   assert.equal((await listFollowers(s, c, Date.now(), "machine-a")).length, 0);
   assert.equal(presenceDir(c), "workbuddy/followers");
+});
+
+test("master-provided follower names win over the local name", async () => {
+  const s = store();
+  const c = config({ name: "本地名" });
+  await writeNames(s, c, { "machine-a": "主人命名" });
+  assert.deepEqual(await readNames(s, c), { "machine-a": "主人命名" });
+  const state = { machineId: "machine-a", lastPresenceAt: "" };
+  await checkIn(s, c, state);
+  const written = JSON.parse(s.files.get(presenceFile(c, "machine-a")));
+  assert.equal(written.alias, "主人命名");
+  assert.equal((await listFollowers(s, c))[0].alias, "主人命名");
 });
 
 test("stale follower check-ins are not counted", async () => {

@@ -214,7 +214,10 @@ function render() {
       ${s.role === "master" ? `
       <section class="card">
         <div class="card-head"><h2>从机</h2><span class="pill">${esc(s.followerCount || 0)} 台在线${s.followerTotal > s.followerCount ? ` · ${esc(s.followerTotal - s.followerCount)} 台离线` : ""}</span></div>
-        ${s.followers?.length ? `<div class="follower-list">${s.followers.map((f) => `<div class="follower${f.online === false ? " offline" : ""}"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span>${esc(f.online === false ? `离线 · ${ago(f.lastSeen)}` : ago(f.lastSeen))}</span></div>`).join("")}</div>` : '<p class="hint">还没有从机上报。从机启动后会自动写一条心跳。</p>'}
+        ${s.followers?.length ? `<div class="follower-list">${s.followers.map((f) => `<div class="follower${f.online === false ? " offline" : ""}">
+          <div class="follower-main"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span>${esc(f.online === false ? `离线 · ${ago(f.lastSeen)}` : ago(f.lastSeen))}</span></div>
+          <div class="follower-edit"><input class="follower-name" type="text" maxlength="80" value="${esc(f.alias || "")}" placeholder="设置名称"><button type="button" class="quiet" data-follower-save data-follower-id="${esc(f.machineId)}">保存</button><span class="hint" id="follower-status-${esc(f.machineId)}"></span></div>
+        </div>`).join("")}</div>` : '<p class="hint">还没有从机上报。从机启动后会自动写一条心跳。</p>'}
         <p class="hint">从机每 ${esc(s.presenceMinutes || 60)} 分钟检查一次，超过 ${esc(s.presenceStaleMinutes || 180)} 分钟未上报会显示为离线。</p>
       </section>` : ""}
 
@@ -232,6 +235,13 @@ function render() {
   document.getElementById("apply-role")?.addEventListener("click", applyRole);
   document.getElementById("takeover")?.addEventListener("click", takeover);
   document.getElementById("save-name")?.addEventListener("click", saveName);
+  document.querySelectorAll("[data-follower-save]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.followerId || "";
+      const input = button.closest(".follower")?.querySelector(".follower-name");
+      return applyOption({ action: "set-follower-name", followerId: id, name: input?.value.trim() || "" }, "已提交，从机下次心跳会使用新名称。", `follower-status-${id}`);
+    });
+  });
 }
 
 reload.addEventListener("click", () => void refreshStatus());
