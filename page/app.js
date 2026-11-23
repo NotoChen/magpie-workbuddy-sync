@@ -2,6 +2,28 @@ const content = document.getElementById("content");
 const reload = document.getElementById("reload");
 const syncNow = document.getElementById("sync-now");
 let busy = false;
+let refreshing = false;
+let takeoverArmed = false;
+
+async function refreshStatus() {
+  if (refreshing) return;
+  refreshing = true;
+  try {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `data.js?ts=${Date.now()}`;
+      script.onload = () => { script.remove(); resolve(); };
+      script.onerror = () => { script.remove(); reject(new Error("status reload failed")); };
+      document.head.appendChild(script);
+    });
+    render();
+  } catch {
+    // Older hosts or a transient file error: fall back to the page reload.
+    location.reload();
+  } finally {
+    refreshing = false;
+  }
+}
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -78,11 +100,25 @@ function applyRole() {
   return applyOption({ action: "set-role", role: select.value }, "已提交，Magpie 会重载插件。");
 }
 
-function takeover() {
+function takeover(event) {
+  // Leave the destructive action two steps: a stray click must not move the
+  // master lease away from a working computer.
+  const button = event?.currentTarget;
+  if (!takeoverArmed) {
+    takeoverArmed = true;
+    if (button) button.textContent = "再点一次确认";
+    setTimeout(() => {
+      takeoverArmed = false;
+      if (button?.isConnected) button.textContent = "接管主机";
+    }, 5000);
+    return;
+  }
+  takeoverArmed = false;
   return applyOption({ action: "takeover" }, "已申请接管主机；旧主机会在下次发布时发现租约已转移并停止。");
 }
 
 function render() {
+  takeoverArmed = false;
   const s = globalThis.WORKBUDDY_SYNC;
   if (!s) {
     content.innerHTML = `<section class="banner bad"><span class="dot"></span><div><strong>还没有状态</strong><p>确认 Magpie 已加载插件，并且 <code>sync.json</code> 存在。</p></div></section>`;
@@ -122,7 +158,7 @@ function render() {
           <span id="apply-status" class="hint" role="status">只影响这台电脑</span>
         </div>
         <p class="hint role-hint">${esc(roleHint)}</p>
-        <p class="hint">“接管主机”会显式覆盖旧主机的租约，适合旧主机已经停机或准备迁移的场景；旧主机下次发布会自动停止。</p>
+        ${s.role === "master" ? "" : '<p class="hint">“接管主机”会显式覆盖旧主机的租约，适合旧主机已经停机或准备迁移的场景；旧主机下次发布会自动停止。</p>'}
       </section>
 
       <section class="card">
@@ -146,8 +182,8 @@ function render() {
 
       ${s.role === "master" ? `
       <section class="card">
-        <div class="card-head"><h2>从机</h2><span class="pill">${esc(s.followerCount || 0)} 台在线</span></div>
-        ${s.followers?.length ? `<div class="follower-list">${s.followers.map((f) => `<div class="follower"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span>${esc(when(f.lastSeen))}</span></div>`).join("")}</div>` : '<p class="hint">还没有从机上报。从机启动后会自动写一条心跳。</p>'}
+        <div class="card-head"><h2>从机</h2><span class="pill">${esc(s.followerCount || 0)} 台在线${s.followerTotal > s.followerCount ? ` · ${esc(s.followerTotal - s.followerCount)} 台离线` : ""}</span></div>
+        ${s.followers?.length ? `<div class="follower-list">${s.followers.map((f) => `<div class="follower${f.online === false ? " offline" : ""}"><b>${esc(f.alias || f.machineId.slice(0, 8))}</b><span>${esc(when(f.lastSeen))}</span></div>`).join("")}</div>` : '<p class="hint">还没有从机上报。从机启动后会自动写一条心跳。</p>'}
         <p class="hint">从机每 ${esc(s.presenceMinutes || 60)} 分钟检查一次，超过 ${esc(s.presenceStaleMinutes || 180)} 分钟未上报会显示为离线。</p>
       </section>` : ""}
 
@@ -167,7 +203,7 @@ function render() {
   document.getElementById("takeover")?.addEventListener("click", takeover);
 }
 
-reload.addEventListener("click", () => location.reload());
+reload.addEventListener("click", () => void refreshStatus());
 syncNow.addEventListener("click", () => applyOption({ action: "sync" }, "已请求同步，Magpie 会重载插件并立即拉取/发布。"));
 render();
 if (globalThis.magpie?.ready) {
@@ -175,9 +211,11 @@ if (globalThis.magpie?.ready) {
 }
 
 // The page is sandboxed and cannot fetch a status endpoint. The host writes
-// data.js; a light reload keeps the status current without a manual click.
+// data.js; reloading that one script keeps status current without a full page
+// reload, so scroll position and focus stay intact.
 setInterval(() => {
   const active = document.activeElement;
-  if (document.hidden || active?.tagName === "SELECT" || active?.tagName === "BUTTON" || document.querySelector("details[open]")) return;
-  location.reload();
+  if (document.hidden || document.querySelector("details[open]")) return;
+  if (active && ["SELECT", "INPUT", "TEXTAREA"].includes(active.tagName)) return;
+  void refreshStatus();
 }, 20_000);

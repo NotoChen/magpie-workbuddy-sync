@@ -55,5 +55,7 @@ test("stale follower check-ins are not counted", async () => {
     role: "slave",
     lastSeen: "2020-01-01T00:00:00.000Z",
   })));
-  assert.equal((await listFollowers(s, c)).length, 0);
+  const followers = await listFollowers(s, c);
+  assert.equal(followers.length, 1);
+  assert.equal(followers[0].online, false);
 });

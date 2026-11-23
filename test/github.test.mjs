@@ -32,3 +32,26 @@ test("GitHub contents store reads metadata and creates a file", async () => {
     globalThis.fetch = original;
   }
 });
+
+test("GitHub contents store lists a folder", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    if (String(url).endsWith("/repos/owner/repo")) {
+      return new Response(JSON.stringify({ private: true }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (String(url).includes("/contents/workbuddy/followers")) {
+      return new Response(JSON.stringify([
+        { type: "file", name: "a.json", path: "workbuddy/followers/a.json", sha: "abc", size: 10 },
+        { type: "dir", name: "nested", path: "workbuddy/followers/nested" },
+      ]), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response("{}", { status: 404 });
+  };
+  try {
+    const store = await createGitHubStore({ github: { repo: "owner/repo", prefix: "" }, token: "token", branch: "", syncURL: "github://owner/repo" });
+    const files = await store.list("workbuddy/followers");
+    assert.deepEqual(files, [{ name: "a.json", path: "workbuddy/followers/a.json", sha: "abc", size: 10 }]);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

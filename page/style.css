@@ -102,3 +102,4 @@ button.quiet:hover { border-color: color-mix(in srgb, var(--wb-muted) 55%, var(-
 .follower:last-child { border-bottom: 0; }
 .follower b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .follower span { color: var(--wb-muted); white-space: nowrap; }
+.follower.offline { opacity: .55; }

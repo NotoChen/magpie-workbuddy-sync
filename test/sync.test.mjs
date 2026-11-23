@@ -146,3 +146,45 @@ test("explicit takeover moves the lease and fences the old master", async () => 
   assert.equal(fenced.ok, false);
   assert.match(fenced.message, /another master/);
 });
+
+test("promoting a follower does not reuse the remote master identity", async () => {
+  const a = await home(false, "master");
+  const b = await home(true);
+  await writeFile(join(a, "plugin-auth.json"), JSON.stringify({
+    workbuddy: { type: "oauth", access: "a", refresh: "r", uid: "u", accountId: "账号", expires: 111 },
+  }), "utf8");
+  await writeFile(join(b, "plugin-auth.json"), JSON.stringify({ other: { type: "api", key: "keep" } }), "utf8");
+  const store = fakeStore();
+  const pluginDir = await mkdtemp(join(tmpdir(), "workbuddy-sync-plugin-"));
+  await mkdir(join(pluginDir, "page"), { recursive: true });
+  const ea = new SyncEngine({ dir: a, pluginDir, options: { storeFactory: () => store }, log: () => {} });
+  const eb = new SyncEngine({ dir: b, pluginDir, options: { storeFactory: () => store }, log: () => {} });
+  assert.equal((await ea.runOnce()).ok, true);
+  assert.equal((await eb.runOnce()).ok, true);
+  assert.notEqual(eb.state.localMasterId, ea.state.localMasterId);
+  const afterFollow = await openData(store.data, "sync-passphrase");
+  assert.notEqual(eb.state.localMasterId, afterFollow.masterId);
+  // Switching the follower to master without a takeover must stop.
+  await writeFile(join(b, "sync.json"), JSON.stringify({
+    url: "github://owner/private-repo", password: "github-token", passphrase: "sync-passphrase", followServer: false,
+  }), "utf8");
+  await writeFile(join(b, "workbuddy-sync.json"), JSON.stringify({ role: "master" }), "utf8");
+  const promoted = await eb.runOnce();
+  assert.equal(promoted.ok, false);
+  assert.match(promoted.message, /another master/);
+});
+
+test("changing the repository keeps the machine identity", async () => {
+  const dir = await home(false, "master");
+  await writeFile(join(dir, "plugin-auth.json"), JSON.stringify({
+    workbuddy: { type: "oauth", access: "a", refresh: "r", uid: "u", accountId: "账号", expires: 111 },
+  }), "utf8");
+  const store = fakeStore();
+  const pluginDir = await mkdtemp(join(tmpdir(), "workbuddy-sync-plugin-"));
+  await mkdir(join(pluginDir, "page"), { recursive: true });
+  const engine = new SyncEngine({ dir, pluginDir, options: { storeFactory: () => store }, log: () => {} });
+  engine.state = { machineId: "machine-1", localMasterId: "local-1", target: "old-target" };
+  await engine.runOnce();
+  assert.equal(engine.state.machineId, "machine-1");
+  assert.equal(engine.state.localMasterId, "local-1");
+});
